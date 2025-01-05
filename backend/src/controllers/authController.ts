@@ -1,0 +1,91 @@
+import { Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
+import { User } from '../models/User.js';
+import { validateSignup, validateLogin } from '../validators/authValidators.js';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
+export const signup = async (req: Request, res: Response) => {
+  try {
+    // Validate request body
+    const validatedData = validateSignup(req.body);
+    if (!validatedData.success) {
+      return res.status(400).json({ error: validatedData.error });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: req.body.email });
+    if (existingUser) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+
+    // Create new user
+    const user = new User({
+      email: req.body.email,
+      password: req.body.password,
+      fullName: req.body.fullName,
+    });
+
+    await user.save();
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user._id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.status(201).json({
+      message: 'User created successfully',
+      token,
+      user: {
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const login = async (req: Request, res: Response) => {
+  try {
+    // Validate request body
+    const validatedData = validateLogin(req.body);
+    if (!validatedData.success) {
+      return res.status(400).json({ error: validatedData.error });
+    }
+
+    // Find user
+    const user = await User.findOne({ email: req.body.email });
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Check password
+    const isValidPassword = await user.comparePassword(req.body.password);
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user._id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.json({
+      message: 'Login successful',
+      token,
+      user: {
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};

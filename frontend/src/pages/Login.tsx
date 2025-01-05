@@ -5,6 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 
+interface User {
+  email: string;
+  password: string;
+}
+
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -30,7 +35,7 @@ const Login = () => {
       // Regular user login check
       const users = JSON.parse(localStorage.getItem("users") || "[]");
       console.log("Users during login:", users); // Debug log
-      const user = users.find((u: any) => u.email === email && u.password === password);
+      const user = users.find((u: User) => u.email === email && u.password === password);
 
       if (user) {
         localStorage.setItem("userRole", "user");
