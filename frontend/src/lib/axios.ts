@@ -1,15 +1,13 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api';
-
 export const api = axios.create({
-  baseURL: API_URL,
+  baseURL: 'http://localhost:5000/api',
   headers: {
     'Content-Type': 'application/json',
-  },
+  }
 });
 
-// Add token to requests if it exists
+// Add request interceptor for auth token
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -17,3 +15,16 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Add response interceptor for handling errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);

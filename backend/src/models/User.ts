@@ -40,6 +40,18 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  skillsExchanged: {
+    type: Number,
+    default: 0
+  },
+  connectedUsers: {
+    type: Number,
+    default: 0
+  },
+  messageCount: {
+    type: Number,
+    default: 0
+  }
 });
 
 // Hash password before saving
@@ -66,9 +78,12 @@ interface IUser extends mongoose.Document {
   fullName: string;
   role: "user" | "admin";
   profileImage: string;
-  createdAt: Date;
   skillToTeach: string;
   skillToLearn: string;
+  skillsExchanged: number;
+  connectedUsers: number;
+  messageCount: number;
+  createdAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 

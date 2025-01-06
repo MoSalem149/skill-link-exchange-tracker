@@ -6,42 +6,82 @@ import { Users, BookOpen, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { api } from "../lib/axios";
+
+interface User {
+  email: string;
+  fullName: string;
+  skillToTeach: string;
+  skillToLearn: string;
+  role: 'user' | 'admin';
+  skillsExchanged?: number;
+  connectedUsers?: number;
+  messageCount?: number;
+}
+
+interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+}
 
 const UserDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [users, setUsers] = useState<any[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    const userEmail = localStorage.getItem("userEmail");
-    const allUsers = JSON.parse(localStorage.getItem("users") || "[]");
-    const user = allUsers.find((u: any) => u.email === userEmail);
-    
-    if (!user) {
-      navigate("/login");
-      return;
-    }
+    const fetchDashboardData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          navigate('/login');
+          return;
+        }
 
-    setCurrentUser(user);
-    setUsers(allUsers.filter((u: any) => u.email !== userEmail));
-  }, [navigate]);
+        // Fetch current user data
+        const response = await api.get('/auth/profile');
+        if (response.data && response.data.user) {
+          setCurrentUser(response.data.user);
+
+          // Fetch all users
+          const usersResponse = await api.get('/users');
+          if (usersResponse.data) {
+            setUsers(usersResponse.data.filter(u => u.email !== response.data.user.email));
+          }
+        }
+      } catch (error: unknown) {
+        const err = error as ApiError;
+        console.error('Error fetching dashboard data:', err.response || err);
+        toast({
+          title: "Error",
+          description: err.response?.data?.message || "Failed to load dashboard data",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchDashboardData();
+  }, [navigate, toast]);
 
   const stats = [
     {
       title: "Skills Exchanged",
-      value: "2",
+      value: currentUser?.skillsExchanged.toString() || "0",
       icon: <BookOpen className="h-6 w-6" />,
     },
     {
       title: "Connected Users",
-      value: "5",
+      value: currentUser?.connectedUsers.toString() || "0",
       icon: <Users className="h-6 w-6" />,
     },
     {
       title: "Messages",
-      value: "12",
+      value: currentUser?.messageCount.toString() || "0",
       icon: <MessageSquare className="h-6 w-6" />,
     },
   ];
