@@ -17,6 +17,16 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  skillToTeach: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  skillToLearn: {
+    type: String,
+    required: true,
+    trim: true,
+  },
   role: {
     type: String,
     enum: ['user', 'admin'],
@@ -57,6 +67,8 @@ interface IUser extends mongoose.Document {
   role: "user" | "admin";
   profileImage: string;
   createdAt: Date;
+  skillToTeach: string;
+  skillToLearn: string;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 

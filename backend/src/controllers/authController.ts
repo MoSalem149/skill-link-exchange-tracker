@@ -24,13 +24,19 @@ export const signup = async (req: Request, res: Response) => {
       email: req.body.email,
       password: req.body.password,
       fullName: req.body.fullName,
+      skillToTeach: req.body.skillToTeach,
+      skillToLearn: req.body.skillToLearn
     });
 
     await user.save();
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user._id, email: user.email, role: user.role },
+      {
+        userId: user._id,
+        email: user.email,
+        role: user.role
+      },
       JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -42,6 +48,8 @@ export const signup = async (req: Request, res: Response) => {
         email: user.email,
         fullName: user.fullName,
         role: user.role,
+        skillToTeach: user.skillToTeach,
+        skillToLearn: user.skillToLearn
       },
     });
   } catch (error) {
@@ -84,6 +92,43 @@ export const login = async (req: Request, res: Response) => {
         fullName: user.fullName,
         role: user.role,
       },
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const updateProfile = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId; // From auth middleware
+    const updates = {
+      ...(req.body.fullName && { fullName: req.body.fullName }),
+      ...(req.body.skillToTeach && { skillToTeach: req.body.skillToTeach }),
+      ...(req.body.skillToLearn && { skillToLearn: req.body.skillToLearn }),
+      ...(req.body.password && { password: req.body.password })
+    };
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'No valid updates provided' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    Object.assign(user, updates);
+    await user.save();
+
+    res.json({
+      message: 'Profile updated successfully',
+      user: {
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+        skillToTeach: user.skillToTeach,
+        skillToLearn: user.skillToLearn
+      }
     });
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });

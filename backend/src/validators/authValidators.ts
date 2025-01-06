@@ -4,6 +4,8 @@ const signupSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   fullName: z.string().min(2),
+  skillToTeach: z.string().min(1, "Skill to teach is required"),
+  skillToLearn: z.string().min(1, "Skill to learn is required")
 });
 
 const loginSchema = z.object({
