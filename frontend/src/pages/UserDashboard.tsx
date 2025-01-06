@@ -49,9 +49,12 @@ const UserDashboard = () => {
           setCurrentUser(response.data.user);
 
           // Fetch all users
-          const usersResponse = await api.get('/users');
+          const usersResponse = await api.get('/auth/users');
           if (usersResponse.data) {
             setUsers(usersResponse.data.filter(u => u.email !== response.data.user.email));
+          } else {
+            setUsers([]); // Explicitly set empty array if no data
+            console.warn('No users data received from API');
           }
         }
       } catch (error: unknown) {
