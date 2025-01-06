@@ -121,20 +121,18 @@ const StudyRoom = () => {
     <DashboardLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Study Room</h1>
+          <h1 className="text-3xl">Study Room</h1>
           <div className="flex items-center space-x-4">
             <Button
-              variant="outline"
               onClick={() => window.open("https://meet.google.com", "_blank")}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 ring-2 ring-slate-500 ring-offset-4 ring-offset-zinc-100"
             >
               <Video className="h-4 w-4" />
               Start Meeting
             </Button>
             <Button
-              variant="outline"
               onClick={() => setShowCalendar(!showCalendar)}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 ring-2 ring-slate-500 ring-offset-4 ring-offset-zinc-100"
             >
               <CalendarIcon className="h-4 w-4" />
               Schedule

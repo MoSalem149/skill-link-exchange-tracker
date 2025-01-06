@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { authService } from "@/services/auth.service";
-
+import {TermsAndConditions} from "./TermsAndConditions"
 const Signup = () => {
   const [formData, setFormData] = useState({
     fullName: "",
@@ -14,7 +13,6 @@ const Signup = () => {
     skillToTeach: "",
     skillToLearn: "",
   });
-  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -26,36 +24,52 @@ const Signup = () => {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
 
     try {
-      const response = await authService.signup(formData);
+      // Get existing users or initialize empty array
+      const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
 
-      // Store the token in localStorage
-      localStorage.setItem('token', response.token);
-      // Store user email for dashboard use
-      localStorage.setItem('userEmail', response.user.email);
+      // Check if email already exists
+      if (existingUsers.some((user: any) => user.email === formData.email)) {
+        toast({
+          title: "Error",
+          description: "Email already exists",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Add new user
+      const newUsers = [...existingUsers, formData];
+      localStorage.setItem("users", JSON.stringify(newUsers));
+      console.log("Users after signup:", newUsers); // Debug log
 
       toast({
         title: "Success!",
-        description: "Your account has been created.",
+        description: "Your account has been created. Please login.",
       });
-
-      navigate("/user-dashboard");
-    } catch (error: unknown) {
-      const err = error as { response?: { data?: { error?: string } } };
+      navigate("/login");
+    } catch (error) {
+      console.error("Error during signup:", error);
       toast({
         title: "Error",
-        description: err.response?.data?.error || "Something went wrong during signup",
+        description: "Something went wrong during signup",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
-
+  const [setTerms, setTermsValue] = useState({
+    IsChecked: false,
+    termsChecked: false
+  });
+  function handleCheckboxChange(event) {
+    setTermsValue({...setTerms, IsChecked: event.target.checked});
+  }
+  function handlePrivacyPolicy(event){
+    setTermsValue({...setTerms, termsChecked: event.target.checked})
+  }
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md">
@@ -72,7 +86,6 @@ const Signup = () => {
                 value={formData.fullName}
                 onChange={handleChange}
                 required
-                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -83,7 +96,6 @@ const Signup = () => {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -94,7 +106,6 @@ const Signup = () => {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -104,7 +115,6 @@ const Signup = () => {
                 value={formData.skillToTeach}
                 onChange={handleChange}
                 required
-                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -114,11 +124,29 @@ const Signup = () => {
                 value={formData.skillToLearn}
                 onChange={handleChange}
                 required
-                disabled={isLoading}
               />
+              <div>
+                <input 
+                type="checkbox"
+                checked={setTerms.IsChecked}
+                onChange={handleCheckboxChange}
+                />
+                <label>
+                  By Acceping you agree to our <a href="/terms" className="text-blue-400 bg-white cursor-pointer"> Terms and Condation</a>
+                </label>
+                <br />
+                <input 
+                type="checkbox"
+                checked={setTerms.termsChecked}
+                onChange={handlePrivacyPolicy}
+                />
+                <label>
+                  By Acceping you agree to our <a href="/privacy-policy" className="text-blue-400 bg-white cursor-pointer"> Privacy and Policy</a> conditiions
+                </label>
+              </div>
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Creating Account..." : "Sign Up"}
+            <Button type="submit" className="w-full ring-2 ring-slate-500 ring-offset-4 ring-offset-zinc-100">
+              Sign Up
             </Button>
           </form>
         </CardContent>

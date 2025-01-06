@@ -125,7 +125,7 @@ export const Navbar = () => {
                 </button>
                 <button
                   onClick={handleLogout}
-                  className="btn-primary flex items-center gap-2"
+                  className="btn-primary flex items-center gap-2 ring-2 ring-slate-500 ring-offset-4 ring-offset-zinc-100"
                 >
                   <LogOut className="h-4 w-4" />
                   Logout

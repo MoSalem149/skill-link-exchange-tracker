@@ -44,18 +44,18 @@ export const ChatSection = ({
             </div>
           ))}
         </div>
-        <div className="flex space-x-2">
+        <div className="flex space-x-6">
           <Input
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Type your message..."
             onKeyPress={(e) => e.key === "Enter" && sendMessage()}
           />
-          <Button onClick={sendMessage} className="flex items-center gap-2">
+          <Button onClick={sendMessage} className="flex items-center gap- ring-2 ring-slate-500 ring-offset-4 ring-offset-zinc-100">
             <MessageSquare className="h-4 w-4" />
             Send
           </Button>
-          <Button variant="outline" className="flex items-center gap-2">
+          <Button  className="flex items-center gap-1 ring-2 ring-slate-500 ring-offset-4 ring-offset-zinc-100">
             <Upload className="h-4 w-4" />
             Upload
           </Button>

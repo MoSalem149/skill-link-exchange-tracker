@@ -112,7 +112,7 @@ export const DirectMessageSection = ({
                 onChange={(e) => setDirectMessage(e.target.value)}
                 className="flex-1"
               />
-              <Button onClick={sendDirectMessage} className="flex items-center gap-2">
+              <Button onClick={sendDirectMessage} className="flex items-center gap-2 ring-2 ring-slate-500 ring-offset-4 ring-offset-zinc-100">
                 <Send className="h-4 w-4" />
                 Send
               </Button>
