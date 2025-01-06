@@ -35,7 +35,7 @@ export const Footer = () => {
           <div>
             <h4 className="text-lg font-semibold mb-4">Contact Us</h4>
             <div className="space-y-2">
-              <a href="mailto:contact@skilllink.com" className="flex items-center text-sm hover:text-secondary">
+              <a href="mailto:contact@skilllink.com" className="flex items-center text-sm hover:text-secondary" target='_blank'>
                 <Mail size={16} className="mr-2" />
                 contact@skilllink.com
               </a>
