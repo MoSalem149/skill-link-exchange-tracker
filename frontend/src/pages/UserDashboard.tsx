@@ -7,25 +7,33 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 
+interface User {
+  email: string;
+  fullName: string;
+  skillToTeach: string;
+  skillToLearn: string;
+  role: 'user' | 'admin';
+}
+
 const UserDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [users, setUsers] = useState<any[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const userEmail = localStorage.getItem("userEmail");
     const allUsers = JSON.parse(localStorage.getItem("users") || "[]");
-    const user = allUsers.find((u: any) => u.email === userEmail);
-    
+    const user = allUsers.find((u: User) => u.email === userEmail);
+
     if (!user) {
       navigate("/login");
       return;
     }
 
     setCurrentUser(user);
-    setUsers(allUsers.filter((u: any) => u.email !== userEmail));
+    setUsers(allUsers.filter((u: User) => u.email !== userEmail));
   }, [navigate]);
 
   const stats = [

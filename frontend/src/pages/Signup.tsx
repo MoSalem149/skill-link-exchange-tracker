@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
+import { authService } from "@/services/auth.service";
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -13,6 +14,7 @@ const Signup = () => {
     skillToTeach: "",
     skillToLearn: "",
   });
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -24,40 +26,33 @@ const Signup = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
 
     try {
-      // Get existing users or initialize empty array
-      const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
+      const response = await authService.signup(formData);
 
-      // Check if email already exists
-      if (existingUsers.some((user: any) => user.email === formData.email)) {
-        toast({
-          title: "Error",
-          description: "Email already exists",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Add new user
-      const newUsers = [...existingUsers, formData];
-      localStorage.setItem("users", JSON.stringify(newUsers));
-      console.log("Users after signup:", newUsers); // Debug log
+      // Store the token in localStorage
+      localStorage.setItem('token', response.token);
+      // Store user email for dashboard use
+      localStorage.setItem('userEmail', response.user.email);
 
       toast({
         title: "Success!",
-        description: "Your account has been created. Please login.",
+        description: "Your account has been created.",
       });
-      navigate("/login");
-    } catch (error) {
-      console.error("Error during signup:", error);
+
+      navigate("/user-dashboard");
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } } };
       toast({
         title: "Error",
-        description: "Something went wrong during signup",
+        description: err.response?.data?.error || "Something went wrong during signup",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -77,6 +72,7 @@ const Signup = () => {
                 value={formData.fullName}
                 onChange={handleChange}
                 required
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -87,6 +83,7 @@ const Signup = () => {
                 value={formData.email}
                 onChange={handleChange}
                 required
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -97,6 +94,7 @@ const Signup = () => {
                 value={formData.password}
                 onChange={handleChange}
                 required
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -106,6 +104,7 @@ const Signup = () => {
                 value={formData.skillToTeach}
                 onChange={handleChange}
                 required
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -115,10 +114,11 @@ const Signup = () => {
                 value={formData.skillToLearn}
                 onChange={handleChange}
                 required
+                disabled={isLoading}
               />
             </div>
-            <Button type="submit" className="w-full">
-              Sign Up
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Creating Account..." : "Sign Up"}
             </Button>
           </form>
         </CardContent>
