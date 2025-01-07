@@ -68,10 +68,35 @@ router.get('/pending', authenticateToken, async (req: AuthRequest, res) => {
     }
     const userEmail = req.user.email;
 
-    const pendingConnections = await Connection.find({
-      receiverId: userEmail,
-      status: ConnectionStatus.PENDING
-    }).populate('senderId', 'fullName email skillToTeach');
+    // Find pending connections where user is the receiver
+    const pendingConnections = await Connection.aggregate([
+      {
+        $match: {
+          receiverId: userEmail,
+          status: ConnectionStatus.PENDING
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'senderId',
+          foreignField: 'email',
+          as: 'senderId'
+        }
+      },
+      {
+        $unwind: '$senderId'
+      },
+      {
+        $project: {
+          _id: 1,
+          status: 1,
+          createdAt: 1,
+          'senderId.fullName': 1,
+          'senderId.skillToTeach': 1
+        }
+      }
+    ]);
 
     res.json(pendingConnections);
 
@@ -141,14 +166,45 @@ router.get('/accepted', authenticateToken, async (req: AuthRequest, res) => {
     }
     const userEmail = req.user.email;
 
+    // Find accepted connections where user is either sender or receiver
     const acceptedConnections = await Connection.find({
       $or: [
         { senderId: userEmail, status: ConnectionStatus.ACCEPTED },
         { receiverId: userEmail, status: ConnectionStatus.ACCEPTED }
       ]
-    }).populate('senderId', 'fullName email skillToTeach');
+    });
 
-    res.json(acceptedConnections);
+    // Get unique user IDs from connections excluding current user
+    const connectedUserEmails = acceptedConnections.reduce((emails: string[], conn) => {
+      if (conn.senderId === userEmail) {
+        emails.push(conn.receiverId);
+      } else {
+        emails.push(conn.senderId);
+      }
+      return emails;
+    }, []);
+
+    // Get user details for connected users
+    const connectedUsers = await User.find({
+      email: { $in: connectedUserEmails }
+    }, 'fullName email skillToTeach skillToLearn');
+
+    // Map connection data with user details
+    const connectionsWithUsers = acceptedConnections.map(conn => {
+      const otherUserEmail = conn.senderId === userEmail ? conn.receiverId : conn.senderId;
+      const otherUser = connectedUsers.find(u => u.email === otherUserEmail);
+
+      return {
+        id: conn._id,
+        senderId: conn.senderId,
+        receiverId: conn.receiverId,
+        status: conn.status,
+        createdAt: conn.createdAt,
+        connectedUser: otherUser
+      };
+    });
+
+    res.json(connectionsWithUsers);
 
   } catch (error) {
     res.status(500).json({
