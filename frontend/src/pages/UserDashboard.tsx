@@ -267,8 +267,8 @@ const UserDashboard = () => {
                     </div>
                     <Button
                       variant="outline"
-                      className="flex items-center gap-2"
-                      onClick={() => window.location.href = `mailto:${connectedUser.email}`}
+                      className="flex items-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary border-primary/20 hover:border-primary/30 transition-colors duration-200"
+                      onClick={() => window.open(`mailto:${connectedUser.email}`, '_blank')}
                     >
                       <Mail className="h-4 w-4" />
                       Contact
