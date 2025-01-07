@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { DashboardCard } from "@/components/DashboardCard";
@@ -33,6 +33,14 @@ interface AcceptedConnection {
   receiverId: string;
   status: 'accepted';
   createdAt: Date;
+}
+
+interface PendingConnection {
+  _id: string;
+  senderId: {
+    fullName: string;
+    skillToTeach: string;
+  };
 }
 
 const UserDashboard = () => {
@@ -106,10 +114,16 @@ const UserDashboard = () => {
 
   const filteredUsers = users.filter((user) => {
     const searchLower = searchTerm.toLowerCase();
+    const isConnected = acceptedConnections.some(
+      conn => conn.senderId === user.email || conn.receiverId === user.email
+    );
+
     return (
-      user.fullName.toLowerCase().includes(searchLower) ||
-      user.skillToTeach.toLowerCase().includes(searchLower) ||
-      user.skillToLearn.toLowerCase().includes(searchLower)
+      !isConnected && (
+        user.fullName.toLowerCase().includes(searchLower) ||
+        user.skillToTeach.toLowerCase().includes(searchLower) ||
+        user.skillToLearn.toLowerCase().includes(searchLower)
+      )
     );
   });
 
@@ -135,7 +149,7 @@ const UserDashboard = () => {
     }
   };
 
-  const handleConnectionResponse = async (connectionId: string, status: 'accepted' | 'rejected') => {
+  const handleConnectionResponse = useCallback(async (connectionId: string, status: 'accepted' | 'rejected') => {
     try {
       const response = await api.put(`/connections/${connectionId}`, { status });
 
@@ -166,7 +180,52 @@ const UserDashboard = () => {
         variant: "destructive",
       });
     }
-  };
+  }, [currentUser, setCurrentUser, toast, setAcceptedConnections]);
+
+  // Add notification for new connection request
+  useEffect(() => {
+    const checkPendingConnections = async () => {
+      try {
+        const response = await api.get('/connections/pending');
+        if (response.data && response.data.length > 0) {
+          response.data.forEach((connection: PendingConnection) => {
+            toast({
+              title: "New Connection Request",
+              description: (
+                <div className="space-y-2">
+                  <p>{connection.senderId.fullName} wants to connect with you!</p>
+                  <p className="text-sm">They teach: {connection.senderId.skillToTeach}</p>
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                      size="sm"
+                      onClick={() => handleConnectionResponse(connection._id, 'accepted')}
+                    >
+                      Accept
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleConnectionResponse(connection._id, 'rejected')}
+                    >
+                      Reject
+                    </Button>
+                  </div>
+                </div>
+              ),
+              duration: 10000,
+            });
+          });
+        }
+      } catch (error) {
+        console.error('Error checking pending connections:', error);
+      }
+    };
+
+    checkPendingConnections();
+    const interval = setInterval(checkPendingConnections, 30000);
+
+    return () => clearInterval(interval);
+  }, [handleConnectionResponse, toast]);
 
   if (!currentUser) return null;
 
