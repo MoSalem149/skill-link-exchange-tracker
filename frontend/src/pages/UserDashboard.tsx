@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { DashboardCard } from "@/components/DashboardCard";
-import { Users, BookOpen, MessageSquare } from "lucide-react";
+import { Users, BookOpen, MessageSquare, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -27,12 +27,21 @@ interface ApiError {
   };
 }
 
+interface AcceptedConnection {
+  id: string;
+  senderId: string;
+  receiverId: string;
+  status: 'accepted';
+  createdAt: Date;
+}
+
 const UserDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [acceptedConnections, setAcceptedConnections] = useState<AcceptedConnection[]>([]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -56,6 +65,12 @@ const UserDashboard = () => {
             setUsers([]); // Explicitly set empty array if no data
             console.warn('No users data received from API');
           }
+        }
+
+        // Fetch accepted connections
+        const connectionsResponse = await api.get('/connections/accepted');
+        if (connectionsResponse.data) {
+          setAcceptedConnections(connectionsResponse.data);
         }
       } catch (error: unknown) {
         const err = error as ApiError;
@@ -98,11 +113,59 @@ const UserDashboard = () => {
     );
   });
 
-  const handleConnect = (userEmail: string) => {
-    toast({
-      title: "Request Sent",
-      description: "Your connection request has been sent successfully!",
-    });
+  const handleConnect = async (userEmail: string) => {
+    try {
+      const response = await api.post('/connections/create', {
+        receiverEmail: userEmail
+      });
+
+      if (response.data) {
+        toast({
+          title: "Request Sent",
+          description: "Your connection request has been sent successfully!",
+        });
+      }
+    } catch (error: unknown) {
+      const err = error as ApiError;
+      toast({
+        title: "Error",
+        description: err.response?.data?.message || "Failed to send connection request",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleConnectionResponse = async (connectionId: string, status: 'accepted' | 'rejected') => {
+    try {
+      const response = await api.put(`/connections/${connectionId}`, { status });
+
+      if (response.data) {
+        // Remove the connection from accepted list if rejected
+        setAcceptedConnections(prev => prev.filter(conn => conn.id !== connectionId));
+
+        // If accepted, update the user's connection count
+        if (status === 'accepted' && currentUser) {
+          setCurrentUser(prev => prev ? {
+            ...prev,
+            connectedUsers: (prev.connectedUsers || 0) + 1
+          } : null);
+        }
+
+        toast({
+          title: status === 'accepted' ? "Connection Accepted" : "Connection Rejected",
+          description: status === 'accepted'
+            ? "You are now connected!"
+            : "Connection request rejected",
+        });
+      }
+    } catch (error: unknown) {
+      const err = error as ApiError;
+      toast({
+        title: "Error",
+        description: err.response?.data?.message || "Failed to respond to connection request",
+        variant: "destructive",
+      });
+    }
   };
 
   if (!currentUser) return null;
@@ -125,6 +188,38 @@ const UserDashboard = () => {
             />
           ))}
         </div>
+
+        {acceptedConnections.length > 0 && (
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-semibold mb-4">Your Connections</h2>
+            <div className="space-y-4">
+              {acceptedConnections.map((connection) => {
+                const connectedUser = users.find(u =>
+                  u.email === connection.senderId || u.email === connection.receiverId
+                );
+                if (!connectedUser) return null;
+
+                return (
+                  <div key={connection.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <p className="font-medium">{connectedUser.fullName}</p>
+                      <p className="text-sm text-gray-500">Teaches: {connectedUser.skillToTeach}</p>
+                      <p className="text-sm text-gray-500">Wants to learn: {connectedUser.skillToLearn}</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="flex items-center gap-2"
+                      onClick={() => window.location.href = `mailto:${connectedUser.email}`}
+                    >
+                      <Mail className="h-4 w-4" />
+                      Contact
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex justify-between items-center mb-6">
