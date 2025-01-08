@@ -134,3 +134,42 @@ export const updateProfile = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+export const getAllUsers = async (req: Request, res: Response) => {
+  try {
+    const users = await User.find({}, {
+      password: 0, // Exclude password from response
+      __v: 0
+    });
+
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const getProfile = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({
+      user: {
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+        skillToTeach: user.skillToTeach,
+        skillToLearn: user.skillToLearn,
+        skillsExchanged: user.skillsExchanged,
+        connectedUsers: user.connectedUsers,
+        messageCount: user.messageCount
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};

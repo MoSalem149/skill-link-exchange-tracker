@@ -10,10 +10,30 @@ import { ChatSection } from "@/components/study-room/ChatSection";
 import { ProgressSection } from "@/components/study-room/ProgressSection";
 import { RatingSection } from "@/components/study-room/RatingSection";
 
+interface Message {
+  id: number;
+  from: string;
+  content: string;
+  timestamp: string;
+}
+
+interface Meeting {
+  date: string;
+  scheduled: string;
+}
+
+interface StudyRoom {
+  id: number;
+  participants: string[];
+  progress: number;
+  messages: Message[];
+  meetings: Meeting[];
+}
+
 const StudyRoom = () => {
   const { roomId } = useParams();
   const { toast } = useToast();
-  const [room, setRoom] = useState<any>(null);
+  const [room, setRoom] = useState<StudyRoom | null>(null);
   const [message, setMessage] = useState("");
   const [rating, setRating] = useState(0);
   const [showCalendar, setShowCalendar] = useState(false);
@@ -21,8 +41,8 @@ const StudyRoom = () => {
   const userEmail = localStorage.getItem("userEmail");
 
   useEffect(() => {
-    const studyRooms = JSON.parse(localStorage.getItem("studyRooms") || "[]");
-    const currentRoom = studyRooms.find((r: any) => r.id === Number(roomId));
+    const studyRooms = JSON.parse(localStorage.getItem("studyRooms") || "[]") as StudyRoom[];
+    const currentRoom = studyRooms.find((r: StudyRoom) => r.id === Number(roomId));
     setRoom(currentRoom || {
       id: Number(roomId),
       participants: [userEmail],
@@ -30,13 +50,13 @@ const StudyRoom = () => {
       messages: [],
       meetings: [],
     });
-  }, [roomId]);
+  }, [roomId, userEmail]);
 
   const sendMessage = () => {
     if (!message.trim()) return;
 
-    const studyRooms = JSON.parse(localStorage.getItem("studyRooms") || "[]");
-    const updatedRooms = studyRooms.map((r: any) => {
+    const studyRooms = JSON.parse(localStorage.getItem("studyRooms") || "[]") as StudyRoom[];
+    const updatedRooms = studyRooms.map((r: StudyRoom) => {
       if (r.id === Number(roomId)) {
         return {
           ...r,
@@ -56,12 +76,12 @@ const StudyRoom = () => {
 
     localStorage.setItem("studyRooms", JSON.stringify(updatedRooms));
     setMessage("");
-    setRoom(updatedRooms.find((r: any) => r.id === Number(roomId)));
+    setRoom(updatedRooms.find((r: StudyRoom) => r.id === Number(roomId)));
   };
 
   const updateProgress = (newProgress: number) => {
-    const studyRooms = JSON.parse(localStorage.getItem("studyRooms") || "[]");
-    const updatedRooms = studyRooms.map((r: any) => {
+    const studyRooms = JSON.parse(localStorage.getItem("studyRooms") || "[]") as StudyRoom[];
+    const updatedRooms = studyRooms.map((r: StudyRoom) => {
       if (r.id === Number(roomId)) {
         return { ...r, progress: newProgress };
       }
@@ -86,9 +106,9 @@ const StudyRoom = () => {
 
   const scheduleSession = (date: Date | undefined) => {
     if (!date) return;
-    
-    const studyRooms = JSON.parse(localStorage.getItem("studyRooms") || "[]");
-    const updatedRooms = studyRooms.map((r: any) => {
+
+    const studyRooms = JSON.parse(localStorage.getItem("studyRooms") || "[]") as StudyRoom[];
+    const updatedRooms = studyRooms.map((r: StudyRoom) => {
       if (r.id === Number(roomId)) {
         return {
           ...r,
@@ -105,10 +125,10 @@ const StudyRoom = () => {
     });
 
     localStorage.setItem("studyRooms", JSON.stringify(updatedRooms));
-    setRoom(updatedRooms.find((r: any) => r.id === Number(roomId)));
+    setRoom(updatedRooms.find((r: StudyRoom) => r.id === Number(roomId)));
     setShowCalendar(false);
     setSelectedDate(date);
-    
+
     toast({
       title: "Session Scheduled",
       description: `Study session scheduled for ${date.toLocaleDateString()}`,

@@ -1,5 +1,7 @@
 import { api } from '@/lib/axios';
 
+const API_URL = 'http://localhost:5000/api/auth';
+
 interface SignupData {
   email: string;
   password: string;
@@ -20,7 +22,7 @@ interface UpdateProfileData {
   password?: string;
 }
 
-export const authService = {
+const authService = {
   async signup(data: SignupData) {
     const response = await api.post('/auth/signup', data);
     if (response.data.token) {
@@ -58,3 +60,5 @@ export const authService = {
     return null;
   }
 };
+
+export default authService;

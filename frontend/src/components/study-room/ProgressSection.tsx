@@ -17,6 +17,7 @@ export const ProgressSection = ({ progress, updateProgress }: ProgressSectionPro
           variant="outline"
           size="sm"
           onClick={() => updateProgress(Math.min(progress + 10, 100))}
+          className="flex items-center gap-2 ring-2 ring-slate-500 ring-offset-4 ring-offset-zinc-100 hover:bg-slate-300 transition-colors duration-200"
         >
           Update Progress
         </Button>

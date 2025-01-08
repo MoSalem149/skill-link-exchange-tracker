@@ -4,7 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import {TermsAndConditions} from "./TermsAndConditions"
+import TermsAndConditions from "./TermsAndConditions";
+import authService from "../services/authService";
+
+interface User {
+  email: string;
+  fullName: string;
+  skillToTeach: string;
+  skillToLearn: string;
+}
+
 const Signup = () => {
   const [formData, setFormData] = useState({
     fullName: "",
@@ -24,38 +33,22 @@ const Signup = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      // Get existing users or initialize empty array
-      const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
-
-      // Check if email already exists
-      if (existingUsers.some((user: any) => user.email === formData.email)) {
-        toast({
-          title: "Error",
-          description: "Email already exists",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Add new user
-      const newUsers = [...existingUsers, formData];
-      localStorage.setItem("users", JSON.stringify(newUsers));
-      console.log("Users after signup:", newUsers); // Debug log
+      const response = await authService.signup(formData);
 
       toast({
         title: "Success!",
         description: "Your account has been created. Please login.",
       });
       navigate("/login");
-    } catch (error) {
-      console.error("Error during signup:", error);
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } } };
       toast({
         title: "Error",
-        description: "Something went wrong during signup",
+        description: err.response?.data?.error || "Something went wrong during signup",
         variant: "destructive",
       });
     }
@@ -126,22 +119,24 @@ const Signup = () => {
                 required
               />
               <div>
-                <input 
+                <input
                 type="checkbox"
                 checked={setTerms.IsChecked}
                 onChange={handleCheckboxChange}
+                required
                 />
                 <label>
-                  By Acceping you agree to our <a href="/terms" className="text-blue-400 bg-white cursor-pointer"> Terms and Condation</a>
+                  By Accepting you agree to our <a href="/terms" className="text-blue-500 bg-white cursor-pointer"> Terms and Condition</a>
                 </label>
                 <br />
-                <input 
+                <input
                 type="checkbox"
                 checked={setTerms.termsChecked}
                 onChange={handlePrivacyPolicy}
+                required
                 />
                 <label>
-                  By Acceping you agree to our <a href="/privacy-policy" className="text-blue-400 bg-white cursor-pointer"> Privacy and Policy</a> conditiions
+                  By Accepting you agree to our <a href="/privacy-policy" className="text-blue-500 bg-white cursor-pointer"> Privacy and Policy conditions</a>
                 </label>
               </div>
             </div>
