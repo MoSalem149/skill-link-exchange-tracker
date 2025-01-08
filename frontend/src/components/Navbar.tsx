@@ -4,6 +4,19 @@ import { Menu, X, Link as LinkIcon, LayoutDashboard, User, Home, Info, Mail, Log
 import { useToast } from "@/components/ui/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+interface User {
+  email: string;
+  fullName: string;
+  profileImage?: string;
+  role: 'user' | 'admin';
+}
+
+interface Message {
+  from: string;
+  to: string;
+  read: boolean;
+}
+
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -17,7 +30,7 @@ export const Navbar = () => {
     const userEmail = localStorage.getItem("userEmail");
     const userRole = localStorage.getItem("userRole");
     const userData = JSON.parse(localStorage.getItem("users") || "[]").find(
-      (u: any) => u.email === userEmail
+      (u: User) => u.email === userEmail
     );
     setIsLoggedIn(!!userEmail);
     setIsAdmin(userRole === "admin");
@@ -32,8 +45,8 @@ export const Navbar = () => {
       const broadcasts = JSON.parse(localStorage.getItem("broadcasts") || "[]");
       const directMessages = JSON.parse(localStorage.getItem("directMessages") || "[]");
 
-      const hasUnreadBroadcasts = broadcasts.some((b: any) => !b.read && b.from !== userEmail);
-      const hasUnreadDirectMessages = directMessages.some((m: any) => !m.read && m.to === userEmail);
+      const hasUnreadBroadcasts = broadcasts.some((b: Message) => !b.read && b.from !== userEmail);
+      const hasUnreadDirectMessages = directMessages.some((m: Message) => !m.read && m.to === userEmail);
 
       setHasUnreadMessages(hasUnreadBroadcasts || hasUnreadDirectMessages);
     };

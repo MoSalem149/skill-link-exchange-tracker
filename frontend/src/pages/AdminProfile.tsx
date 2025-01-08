@@ -7,6 +7,16 @@ import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, Camera, Save, Lock, Mail, UserRound } from "lucide-react";
 
+interface User {
+  email: string;
+  fullName: string;
+  password: string;
+  profileImage: string;
+  role: 'user' | 'admin';
+  skillToTeach: string;
+  skillToLearn: string;
+}
+
 const AdminProfile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -18,7 +28,6 @@ const AdminProfile = () => {
   });
 
   useEffect(() => {
-    // Check if user is admin before loading data
     const userEmail = localStorage.getItem("userEmail");
     const userRole = localStorage.getItem("userRole");
 
@@ -28,8 +37,8 @@ const AdminProfile = () => {
     }
 
     // Load user data
-    const users = JSON.parse(localStorage.getItem("users") || "[]");
-    const user = users.find((u: any) => u.email === userEmail);
+    const users = JSON.parse(localStorage.getItem("users") || "[]") as User[];
+    const user = users.find((u: User) => u.email === userEmail);
 
     if (user) {
       setFormData(user);
@@ -61,8 +70,8 @@ const AdminProfile = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const users = JSON.parse(localStorage.getItem("users") || "[]");
-    const updatedUsers = users.map((user: any) =>
+    const users = JSON.parse(localStorage.getItem("users") || "[]") as User[];
+    const updatedUsers = users.map((user: User) =>
       user.email === formData.email ? formData : user
     );
 

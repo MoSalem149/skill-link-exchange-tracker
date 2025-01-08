@@ -20,16 +20,17 @@ const Login = () => {
     try {
       const response = await authService.login({ email, password });
 
-      // Store the token in localStorage
+      // Store the token and user info
       localStorage.setItem('token', response.token);
-      // Store user email for dashboard use
       localStorage.setItem('userEmail', response.user.email);
+      localStorage.setItem('userRole', response.user.role);
 
       toast({
         title: "Welcome back!",
         description: "You have successfully logged in.",
       });
 
+      // Redirect based on role
       if (response.user.role === 'admin') {
         navigate("/admin-dashboard");
       } else {

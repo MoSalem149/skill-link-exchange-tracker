@@ -4,6 +4,14 @@ import { DashboardCard } from "@/components/DashboardCard";
 import { Users, BookOpen, Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+interface User {
+  email: string;
+  fullName: string;
+  skillToTeach: string;
+  skillToLearn: string;
+  role: 'user' | 'admin';
+}
+
 const AdminDashboard = () => {
   const { toast } = useToast();
   const [users] = useState(() => {
@@ -18,7 +26,7 @@ const AdminDashboard = () => {
     },
     {
       title: "Total Skills",
-      value: users.reduce((acc: number, user: any) => {
+      value: users.reduce((acc: number, user: User) => {
         const teachSkills = user.skillToTeach ? 1 : 0;
         const learnSkills = user.skillToLearn ? 1 : 0;
         return acc + teachSkills + learnSkills;
@@ -33,7 +41,7 @@ const AdminDashboard = () => {
   ];
 
   const handleDeleteUser = (email: string) => {
-    const updatedUsers = users.filter((user: any) => user.email !== email);
+    const updatedUsers = users.filter((user: User) => user.email !== email);
     localStorage.setItem("users", JSON.stringify(updatedUsers));
     toast({
       title: "Success",
@@ -86,7 +94,7 @@ const AdminDashboard = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {users.map((user: any) => (
+                  {users.map((user: User) => (
                     <tr key={user.email}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {user.fullName}

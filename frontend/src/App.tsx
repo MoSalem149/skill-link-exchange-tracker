@@ -18,6 +18,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsAndConditions from "./pages/TermsAndConditions";
 import Messages from "./pages/Messages";
 import StudyRoom from "./pages/StudyRoom";
+import { AdminRoute } from './components/AdminRoute';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -84,17 +85,17 @@ const App = () => {
             <Route
               path="/admin-dashboard"
               element={
-                <PrivateRoute>
+                <AdminRoute>
                   <AdminDashboard />
-                </PrivateRoute>
+                </AdminRoute>
               }
             />
             <Route
               path="/admin-profile"
               element={
-                <PrivateRoute>
+                <AdminRoute>
                   <AdminProfile />
-                </PrivateRoute>
+                </AdminRoute>
               }
             />
             <Route
