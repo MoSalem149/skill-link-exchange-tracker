@@ -6,6 +6,16 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, Camera, Lock, Mail, UserRound } from "lucide-react";
+import { api } from "../lib/axios";
+
+interface User {
+  email: string;
+  fullName: string;
+  skillToTeach: string;
+  skillToLearn: string;
+  password: string;
+  profileImage: string;
+}
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -20,17 +30,31 @@ const Profile = () => {
   });
 
   useEffect(() => {
-    const userEmail = localStorage.getItem("userEmail");
-    const users = JSON.parse(localStorage.getItem("users") || "[]");
-    const user = users.find((u: any) => u.email === userEmail);
+    const fetchUserData = async () => {
+      const userEmail = localStorage.getItem("userEmail");
+      try {
+        const response = await api.get("/auth/users");
+        const users = response.data;
+        const user = users.find((user: User) => user.email === userEmail);
 
-    if (!user) {
-      navigate("/login");
-      return;
-    }
+        if (!user) {
+          navigate("/login");
+          return;
+        }
 
-    setFormData(user);
-  }, [navigate]);
+        setFormData(user);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Something went wrong while fetching your profile",
+          variant: "destructive",
+        });
+        navigate("/login");
+      }
+    };
+
+    fetchUserData();
+  }, [navigate, toast]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -58,7 +82,7 @@ const Profile = () => {
     e.preventDefault();
 
     const users = JSON.parse(localStorage.getItem("users") || "[]");
-    const updatedUsers = users.map((user: any) =>
+    const updatedUsers = users.map((user: User) =>
       user.email === formData.email ? formData : user
     );
 
