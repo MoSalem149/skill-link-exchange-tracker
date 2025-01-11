@@ -18,7 +18,7 @@ export const RatingSection = ({ rating, submitRating }: RatingSectionProps) => {
             variant={rating >= value ? "default" : "outline"}
             size="sm"
             onClick={() => submitRating(value)}
-            className="flex items-center gap-1"
+            className="flex items-center gap-5 ring-2 ring-slate-500 ring-offset-4 ring-offset-zinc-100"
           >
             <Star className="h-4 w-4" />
             {value}
