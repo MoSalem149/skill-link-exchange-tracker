@@ -168,7 +168,7 @@ const StudyRoom = () => {
               mode="single"
               selected={selectedDate}
               onSelect={scheduleSession}
-              className="rounded-md border"
+              className="c"
             />
           </Card>
         )}
