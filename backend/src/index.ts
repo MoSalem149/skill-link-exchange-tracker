@@ -4,14 +4,12 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes.js';
 import connectionsRouter from './routes/connections.js';
-import readline from 'readline';
 
 
 dotenv.config();
 
 export const app = express();
 const PORT = process.env.PORT || 5000;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/skilllink';
 
 // Middleware
 app.use(cors());
@@ -20,20 +18,6 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/connections', connectionsRouter);
-
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-
-const promptConnectionType = (): Promise<string> => {
-  return new Promise((resolve) => {
-    rl.question('Choose connection type (1 for local, 2 for cloud): ', (answer) => {
-      rl.close();
-      resolve(answer);
-    });
-  });
-};
 
 const getConnectionType = (): 'local' | 'cloud' => {
   const args = process.argv;
