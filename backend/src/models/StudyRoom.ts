@@ -7,8 +7,8 @@ const studyRoomSchema = new mongoose.Schema({
     unique: true
   },
   participants: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+    type: String,
+    required: true
   }],
   progress: {
     type: Number,
@@ -17,18 +17,19 @@ const studyRoomSchema = new mongoose.Schema({
   messages: [{
     from: String,
     content: String,
-    timestamp: {
-      type: Date,
-      default: Date.now
-    }
+    timestamp: Date
   }],
   meetings: [{
     date: Date,
-    scheduled: {
-      type: Date,
-      default: Date.now
-    }
-  }]
+    scheduled: Date
+  }],
+  isCompleted: {
+    type: Boolean,
+    default: false
+  },
+  completedAt: {
+    type: Date
+  }
 }, { timestamps: true });
 
 export const StudyRoom = mongoose.model('StudyRoom', studyRoomSchema);
