@@ -2,6 +2,7 @@ import { MessageSquare, Upload } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useRef, useEffect } from "react";
 
 interface Message {
   id: number;
@@ -34,6 +35,16 @@ export const ChatSection = ({
   sendMessage,
   connectedUsers
 }: ChatSectionProps) => {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
   const getSenderName = (email: string) => {
     const user = connectedUsers.find(u => u.email === email);
     return user?.fullName || email;
@@ -67,6 +78,7 @@ export const ChatSection = ({
               </div>
             </div>
           ))}
+          <div ref={messagesEndRef} />
         </div>
         <div className="flex space-x-6">
           <Input
@@ -78,10 +90,6 @@ export const ChatSection = ({
           <Button onClick={sendMessage} className="flex items-center gap-1 ring-2 ring-slate-500 ring-offset-4 ring-offset-zinc-100">
             <MessageSquare className="h-4 w-4" />
             Send
-          </Button>
-          <Button className="flex items-center gap-1 ring-2 ring-slate-500 ring-offset-4 ring-offset-zinc-100">
-            <Upload className="h-4 w-4" />
-            Upload
           </Button>
         </div>
       </div>
