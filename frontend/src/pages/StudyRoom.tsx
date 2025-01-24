@@ -9,6 +9,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { ChatSection } from "@/components/study-room/ChatSection";
 import { ProgressSection } from "@/components/study-room/ProgressSection";
 import { RatingSection } from "@/components/study-room/RatingSection";
+import { io, Socket } from 'socket.io-client';
+import studyRoomService from "@/services/studyRoomService";
 
 interface Message {
   id: number;
@@ -30,6 +32,12 @@ interface StudyRoom {
   meetings: Meeting[];
 }
 
+interface ConnectedUser {
+  email: string;
+  fullName: string;
+  online: boolean;
+}
+
 const StudyRoom = () => {
   const { roomId } = useParams();
   const { toast } = useToast();
@@ -38,62 +46,117 @@ const StudyRoom = () => {
   const [rating, setRating] = useState(0);
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>();
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [connectedUsers, setConnectedUsers] = useState<ConnectedUser[]>([]);
   const userEmail = localStorage.getItem("userEmail");
 
+  // Initialize WebSocket connection
   useEffect(() => {
-    const studyRooms = JSON.parse(localStorage.getItem("studyRooms") || "[]") as StudyRoom[];
-    const currentRoom = studyRooms.find((r: StudyRoom) => r.id === Number(roomId));
-    setRoom(currentRoom || {
-      id: Number(roomId),
-      participants: [userEmail],
-      progress: 0,
-      messages: [],
-      meetings: [],
+    const token = localStorage.getItem('token');
+    const newSocket = io('http://localhost:5000', {
+      auth: { token }
     });
-  }, [roomId, userEmail]);
+
+    newSocket.on('connect', () => {
+      console.log('Connected to chat server');
+      // Join study room
+      newSocket.emit('joinStudyRoom', { roomId, userEmail });
+    });
+
+    newSocket.on('userJoined', (users: ConnectedUser[]) => {
+      setConnectedUsers(users);
+      toast({
+        title: "User Joined",
+        description: "A new user has joined the study room",
+      });
+    });
+
+    newSocket.on('userLeft', (users: ConnectedUser[]) => {
+      setConnectedUsers(users);
+      toast({
+        title: "User Left",
+        description: "A user has left the study room",
+      });
+    });
+
+    newSocket.on('newMessage', (newMessage: Message) => {
+      setRoom(prevRoom => {
+        if (!prevRoom) return null;
+        return {
+          ...prevRoom,
+          messages: [...prevRoom.messages, newMessage]
+        };
+      });
+    });
+
+    setSocket(newSocket);
+
+    return () => {
+      newSocket.emit('leaveStudyRoom', { roomId, userEmail });
+      newSocket.close();
+    };
+  }, [roomId, userEmail, toast]);
+
+  useEffect(() => {
+    const fetchRoom = async () => {
+      try {
+        const roomData = await studyRoomService.getRoom(roomId);
+        setRoom(roomData);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to load study room",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchRoom();
+  }, [roomId, toast]);
 
   const sendMessage = () => {
-    if (!message.trim()) return;
+    if (!message.trim() || !socket) return;
 
-    const studyRooms = JSON.parse(localStorage.getItem("studyRooms") || "[]") as StudyRoom[];
-    const updatedRooms = studyRooms.map((r: StudyRoom) => {
-      if (r.id === Number(roomId)) {
-        return {
-          ...r,
-          messages: [
-            ...r.messages,
-            {
-              id: Date.now(),
-              from: userEmail,
-              content: message,
-              timestamp: new Date().toISOString(),
-            },
-          ],
-        };
-      }
-      return r;
+    const newMessage = {
+      id: Date.now(),
+      from: userEmail,
+      content: message,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Emit message through WebSocket
+    socket.emit('sendMessage', {
+      roomId,
+      message: newMessage
     });
 
-    localStorage.setItem("studyRooms", JSON.stringify(updatedRooms));
+    // Update local state
+    setRoom(prevRoom => {
+      if (!prevRoom) return null;
+      return {
+        ...prevRoom,
+        messages: [...prevRoom.messages, newMessage]
+      };
+    });
+
     setMessage("");
-    setRoom(updatedRooms.find((r: StudyRoom) => r.id === Number(roomId)));
   };
 
-  const updateProgress = (newProgress: number) => {
-    const studyRooms = JSON.parse(localStorage.getItem("studyRooms") || "[]") as StudyRoom[];
-    const updatedRooms = studyRooms.map((r: StudyRoom) => {
-      if (r.id === Number(roomId)) {
-        return { ...r, progress: newProgress };
-      }
-      return r;
-    });
-
-    localStorage.setItem("studyRooms", JSON.stringify(updatedRooms));
-    setRoom({ ...room, progress: newProgress });
-    toast({
-      title: "Progress Updated",
-      description: `Study progress is now at ${newProgress}%`,
-    });
+  const updateProgress = async (newProgress: number) => {
+    try {
+      await studyRoomService.updateProgress(roomId, newProgress);
+      setRoom(prev => prev ? { ...prev, progress: newProgress } : null);
+      toast({
+        title: "Success",
+        description: `Progress updated to ${newProgress}%`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update progress",
+        variant: "destructive",
+      });
+    }
   };
 
   const submitRating = (value: number) => {
@@ -105,27 +168,28 @@ const StudyRoom = () => {
   };
 
   const scheduleSession = (date: Date | undefined) => {
-    if (!date) return;
+    if (!date || !socket) return;
 
-    const studyRooms = JSON.parse(localStorage.getItem("studyRooms") || "[]") as StudyRoom[];
-    const updatedRooms = studyRooms.map((r: StudyRoom) => {
-      if (r.id === Number(roomId)) {
-        return {
-          ...r,
-          meetings: [
-            ...r.meetings,
-            {
-              date: date.toISOString(),
-              scheduled: new Date().toISOString(),
-            },
-          ],
-        };
-      }
-      return r;
+    const newMeeting = {
+      date: date.toISOString(),
+      scheduled: new Date().toISOString(),
+    };
+
+    // Emit meeting through WebSocket
+    socket.emit('scheduleMeeting', {
+      roomId,
+      meeting: newMeeting
     });
 
-    localStorage.setItem("studyRooms", JSON.stringify(updatedRooms));
-    setRoom(updatedRooms.find((r: StudyRoom) => r.id === Number(roomId)));
+    // Update local state
+    setRoom(prevRoom => {
+      if (!prevRoom) return null;
+      return {
+        ...prevRoom,
+        meetings: [...prevRoom.meetings, newMeeting]
+      };
+    });
+
     setShowCalendar(false);
     setSelectedDate(date);
 
@@ -160,6 +224,19 @@ const StudyRoom = () => {
           </div>
         </div>
 
+        {/* Connected Users Section */}
+        <Card className="p-4">
+          <h2 className="text-xl font-semibold mb-4">Connected Users</h2>
+          <div className="space-y-2">
+            {connectedUsers.map((user) => (
+              <div key={user.email} className="flex items-center justify-between">
+                <span>{user.fullName}</span>
+                <span className={`h-3 w-3 rounded-full ${user.online ? 'bg-green-500' : 'bg-gray-300'}`} />
+              </div>
+            ))}
+          </div>
+        </Card>
+
         <ProgressSection progress={room.progress} updateProgress={updateProgress} />
 
         {showCalendar && (
@@ -168,7 +245,7 @@ const StudyRoom = () => {
               mode="single"
               selected={selectedDate}
               onSelect={scheduleSession}
-              className="c"
+              className="rounded-md border"
             />
           </Card>
         )}
@@ -181,6 +258,7 @@ const StudyRoom = () => {
           userEmail={userEmail}
           setMessage={setMessage}
           sendMessage={sendMessage}
+          connectedUsers={connectedUsers}
         />
       </div>
     </DashboardLayout>
