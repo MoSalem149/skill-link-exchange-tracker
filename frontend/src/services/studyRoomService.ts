@@ -5,7 +5,8 @@ const studyRoomService = {
   async createRoom(participants: string[]) {
     const response = await api.post('/rooms', {
       id: Date.now(),
-      participants
+      participants,
+      progress: 0
     });
     return response.data;
   },
@@ -22,6 +23,16 @@ const studyRoomService = {
       progress
     });
     return response.data;
+  },
+
+  async getUserActiveRoom(userEmail: string) {
+    try {
+      const response = await api.get(`/rooms/user/${userEmail}/active`);
+      return response.data;
+    } catch (error) {
+      console.error('Error in getUserActiveRoom:', error);
+      throw error;
+    }
   }
 };
 

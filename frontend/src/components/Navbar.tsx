@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, Link as LinkIcon, LayoutDashboard, User, Home, Info, Mail, LogOut, BookOpen, MessageCircle } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import studyRoomService from "@/services/studyRoomService";
 
 interface User {
   email: string;
@@ -23,11 +24,12 @@ export const Navbar = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [userImage, setUserImage] = useState('');
   const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
+  const [userRoomId, setUserRoomId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [userEmail, setUserEmail] = useState(localStorage.getItem("userEmail"));
 
   useEffect(() => {
-    const userEmail = localStorage.getItem("userEmail");
     const userRole = localStorage.getItem("userRole");
     const userData = JSON.parse(localStorage.getItem("users") || "[]").find(
       (u: User) => u.email === userEmail
@@ -37,11 +39,10 @@ export const Navbar = () => {
     if (userData?.profileImage) {
       setUserImage(userData.profileImage);
     }
-  }, []);
+  }, [userEmail]);
 
   useEffect(() => {
     const checkUnreadMessages = () => {
-      const userEmail = localStorage.getItem("userEmail");
       const broadcasts = JSON.parse(localStorage.getItem("broadcasts") || "[]");
       const directMessages = JSON.parse(localStorage.getItem("directMessages") || "[]");
 
@@ -55,7 +56,36 @@ export const Navbar = () => {
     const interval = setInterval(checkUnreadMessages, 5000); // Check every 5 seconds
 
     return () => clearInterval(interval);
-  }, []);
+  }, [userEmail]);
+
+  useEffect(() => {
+    const fetchUserRoom = async () => {
+      try {
+        if (userEmail) {
+          const response = await studyRoomService.getUserActiveRoom(userEmail || "");
+          if (response.hasActiveRoom && response.room) {
+            setUserRoomId(response.room.id);
+
+            if (response.isNewRoom) {
+              toast({
+                title: "New Study Room Created",
+                description: "A new study room has been created with your connected users.",
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user room:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch study room status",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchUserRoom();
+  }, [userEmail, toast]);
 
   const handleLogout = () => {
     localStorage.removeItem("userEmail");
@@ -74,6 +104,25 @@ export const Navbar = () => {
       navigate("/admin-profile");
     } else {
       navigate("/profile");
+    }
+  };
+
+  const handleStudyRoomClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (userEmail) {
+      try {
+        const response = await studyRoomService.getUserActiveRoom(userEmail || "");
+        if (response.hasActiveRoom && response.room) {
+          navigate(`/study-room/${response.room.id}`);
+        }
+      } catch (error) {
+        console.error('Error accessing study room:', error);
+        toast({
+          title: "Error",
+          description: "Failed to access study room",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -108,7 +157,10 @@ export const Navbar = () => {
                   <LayoutDashboard className="h-4 w-4" />
                   Dashboard
                 </Link>
-                <Link to="/study-room/1" className="text-text hover:text-primary transition-colors flex items-center gap-2">
+                <Link
+                  to={userRoomId ? `/study-room/${userRoomId}` : "/connections"}
+                  className="text-text hover:text-primary transition-colors flex items-center gap-2"
+                >
                   <BookOpen className="h-4 w-4" />
                   Study Room
                 </Link>
@@ -187,7 +239,11 @@ export const Navbar = () => {
                     <LayoutDashboard className="h-4 w-4" />
                     Dashboard
                   </Link>
-                  <Link to="/study-room/1" className="block px-3 py-2 text-text hover:text-primary flex items-center gap-2">
+                  <Link
+                    to="#"
+                    onClick={handleStudyRoomClick}
+                    className="block px-3 py-2 text-text hover:text-primary flex items-center gap-2"
+                  >
                     <BookOpen className="h-4 w-4" />
                     Study Room
                   </Link>

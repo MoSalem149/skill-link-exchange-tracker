@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,8 @@ interface StudyRoom {
   progress: number;
   messages: Message[];
   meetings: Meeting[];
+  isCompleted: boolean;
+  completedAt: Date | null;
 }
 
 interface ConnectedUser {
@@ -49,6 +51,8 @@ const StudyRoom = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [connectedUsers, setConnectedUsers] = useState<ConnectedUser[]>([]);
   const userEmail = localStorage.getItem("userEmail");
+  const [isCompleted, setIsCompleted] = useState(false);
+  const navigate = useNavigate();
 
   // Initialize WebSocket connection
   useEffect(() => {
@@ -101,8 +105,19 @@ const StudyRoom = () => {
     const fetchRoom = async () => {
       try {
         const roomData = await studyRoomService.getRoom(roomId);
+
+        // Only create a new room if the current one is completed
+        if (roomData.isCompleted) {
+          toast({
+            title: "Room Completed",
+            description: "This study room has been completed.",
+          });
+          navigate('/user-dashboard');
+        }
+
         setRoom(roomData);
       } catch (error) {
+        console.error('Error fetching room:', error);
         toast({
           title: "Error",
           description: "Failed to load study room",
@@ -111,8 +126,10 @@ const StudyRoom = () => {
       }
     };
 
-    fetchRoom();
-  }, [roomId, toast]);
+    if (roomId) {
+      fetchRoom();
+    }
+  }, [roomId, toast, navigate, userEmail]);
 
   const sendMessage = () => {
     if (!message.trim() || !socket) return;
@@ -144,12 +161,26 @@ const StudyRoom = () => {
 
   const updateProgress = async (newProgress: number) => {
     try {
-      await studyRoomService.updateProgress(roomId, newProgress);
+      const updatedRoom = await studyRoomService.updateProgress(roomId, newProgress);
       setRoom(prev => prev ? { ...prev, progress: newProgress } : null);
-      toast({
-        title: "Success",
-        description: `Progress updated to ${newProgress}%`,
-      });
+
+      if (newProgress === 100) {
+        setIsCompleted(true);
+        toast({
+          title: "Congratulations! 🎉",
+          description: "You've completed this study room! Your skills exchanged count has been updated.",
+        });
+
+        // Wait for 3 seconds before redirecting
+        setTimeout(() => {
+          navigate('/user-dashboard');
+        }, 5000);
+      } else {
+        toast({
+          title: "Success",
+          description: `Progress updated to ${newProgress}%`,
+        });
+      }
     } catch (error) {
       toast({
         title: "Error",
@@ -203,6 +234,21 @@ const StudyRoom = () => {
 
   return (
     <DashboardLayout>
+      {isCompleted && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="p-6 max-w-md">
+            <h2 className="text-2xl font-bold mb-4">Congratulations! 🎉</h2>
+            <p className="mb-4">
+              You've successfully completed this study room! Your skills exchanged count has been updated.
+            </p>
+            <p className="mb-4">
+              You'll be redirected to the dashboard in a moment...
+            </p>
+            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto" />
+          </Card>
+        </div>
+      )}
+
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl">Study Room</h1>
