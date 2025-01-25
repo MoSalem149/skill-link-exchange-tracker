@@ -64,4 +64,53 @@ describe('Connection Routes', () => {
     // Clear connections before each test
     await Connection.deleteMany({});
   });
+
+  describe('POST /connections/create', () => {
+    it('should create a new connection request', async () => {
+      const response = await request(app)
+        .post('/connections/create')
+        .set('Authorization', `Bearer ${token1}`)
+        .send({ receiverEmail: testUser2.email });
+
+      expect(response.status).toBe(201);
+      expect(response.body).toHaveProperty('senderId', testUser1.email);
+      expect(response.body).toHaveProperty('receiverId', testUser2.email);
+      expect(response.body).toHaveProperty('status', ConnectionStatus.PENDING);
+    });
+
+    it('should not allow duplicate connections', async () => {
+      // Create initial connection
+      await Connection.create({
+        senderId: testUser1.email,
+        receiverId: testUser2.email,
+        status: ConnectionStatus.PENDING
+      });
+
+      const response = await request(app)
+        .post('/connections/create')
+        .set('Authorization', `Bearer ${token1}`)
+        .send({ receiverEmail: testUser2.email });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty('message', 'Connection already exists');
+    });
+
+    it('should return 404 for non-existent receiver', async () => {
+      const response = await request(app)
+        .post('/connections/create')
+        .set('Authorization', `Bearer ${token1}`)
+        .send({ receiverEmail: 'nonexistent@test.com' });
+
+      expect(response.status).toBe(404);
+      expect(response.body).toHaveProperty('message', 'Receiver not found');
+    });
+
+    it('should require authentication', async () => {
+      const response = await request(app)
+        .post('/connections/create')
+        .send({ receiverEmail: testUser2.email });
+
+      expect(response.status).toBe(401);
+    });
+  });
 });
