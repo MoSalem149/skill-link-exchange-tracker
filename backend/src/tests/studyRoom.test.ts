@@ -62,4 +62,37 @@ describe('Study Room Routes', () => {
     await StudyRoom.deleteMany({});
     await Connection.deleteMany({});
   });
+
+  describe('POST /study/rooms', () => {
+    it('should create a new study room', async () => {
+      const roomData = {
+        id: Date.now().toString(),
+        participants: [testUser1.email, testUser2.email]
+      };
+
+      const response = await request(app)
+        .post('/study/rooms')
+        .set('Authorization', `Bearer ${token1}`)
+        .send(roomData);
+
+      expect(response.status).toBe(201);
+      expect(response.body).toHaveProperty('id', roomData.id);
+      expect(response.body.participants).toContain(testUser1.email);
+      expect(response.body.participants).toContain(testUser2.email);
+      expect(response.body.progress).toBe(0);
+
+      roomId = response.body.id;
+    });
+
+    it('should require authentication', async () => {
+      const response = await request(app)
+        .post('/study/rooms')
+        .send({
+          id: Date.now().toString(),
+          participants: [testUser1.email, testUser2.email]
+        });
+
+      expect(response.status).toBe(401);
+    });
+  });
 });
