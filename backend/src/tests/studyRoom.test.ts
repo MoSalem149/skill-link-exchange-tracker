@@ -241,4 +241,36 @@ describe('Study Room Routes', () => {
       expect(response.status).toBe(400);
     });
   });
+
+  describe('Error Handling', () => {
+    it('should handle database errors gracefully', async () => {
+      // Temporarily break the database connection
+      await mongoose.connection.close();
+
+      const response = await request(app)
+        .post('/study/rooms')
+        .set('Authorization', `Bearer ${token1}`)
+        .send({
+          id: Date.now().toString(),
+          participants: [testUser1.email, testUser2.email]
+        });
+
+      expect(response.status).toBe(500);
+      expect(response.body).toHaveProperty('error');
+
+      // Reconnect for other tests
+      await mongoose.connect(process.env.MONGODB_TEST_URI!);
+    });
+
+    it('should validate required fields', async () => {
+      const response = await request(app)
+        .post('/study/rooms')
+        .set('Authorization', `Bearer ${token1}`)
+        .send({
+          // Missing required fields
+        });
+
+      expect(response.status).toBe(500);
+    });
+  });
 });
