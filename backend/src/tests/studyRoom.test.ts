@@ -185,4 +185,60 @@ describe('Study Room Routes', () => {
       expect(user1?.skillsExchanged).toBe(1); // Should still be 1
     });
   });
+
+  describe('GET /study/rooms/user/:userEmail/active', () => {
+    it('should get active room for user', async () => {
+      // Create an active room
+      await StudyRoom.create({
+        id: Date.now().toString(),
+        participants: [testUser1.email, testUser2.email],
+        progress: 50,
+        isCompleted: false
+      });
+
+      const response = await request(app)
+        .get(`/study/rooms/user/${testUser1.email}/active`)
+        .set('Authorization', `Bearer ${token1}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.hasActiveRoom).toBe(true);
+      expect(response.body.room.participants).toContain(testUser1.email);
+    });
+
+    it('should create new room if user has connections but no active room', async () => {
+      // Create a connection
+      await Connection.create({
+        senderId: testUser1.email,
+        receiverId: testUser2.email,
+        status: 'accepted'
+      });
+
+      const response = await request(app)
+        .get(`/study/rooms/user/${testUser1.email}/active`)
+        .set('Authorization', `Bearer ${token1}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.hasActiveRoom).toBe(true);
+      expect(response.body.isNewRoom).toBe(true);
+      expect(response.body.room.participants).toContain(testUser1.email);
+      expect(response.body.room.participants).toContain(testUser2.email);
+    });
+
+    it('should return no active room for user without connections', async () => {
+      const response = await request(app)
+        .get(`/study/rooms/user/${testUser1.email}/active`)
+        .set('Authorization', `Bearer ${token1}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.hasActiveRoom).toBe(false);
+    });
+
+    it('should require user email parameter', async () => {
+      const response = await request(app)
+        .get('/study/rooms/user//active')
+        .set('Authorization', `Bearer ${token1}`);
+
+      expect(response.status).toBe(400);
+    });
+  });
 });
