@@ -113,4 +113,47 @@ describe('Connection Routes', () => {
       expect(response.status).toBe(401);
     });
   });
+
+  describe('GET /connections/pending', () => {
+    beforeEach(async () => {
+      // Create pending connection
+      await Connection.create({
+        senderId: testUser1.email,
+        receiverId: testUser2.email,
+        status: ConnectionStatus.PENDING
+      });
+    });
+
+    it('should return pending connections for receiver', async () => {
+      const response = await request(app)
+        .get('/connections/pending')
+        .set('Authorization', `Bearer ${token2}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveLength(1);
+      expect(response.body[0]).toHaveProperty('senderId.fullName', testUser1.fullName);
+      expect(response.body[0]).toHaveProperty('status', ConnectionStatus.PENDING);
+    });
+
+    it('should not return accepted connections', async () => {
+      await Connection.findOneAndUpdate(
+        { senderId: testUser1.email },
+        { status: ConnectionStatus.ACCEPTED }
+      );
+
+      const response = await request(app)
+        .get('/connections/pending')
+        .set('Authorization', `Bearer ${token2}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveLength(0);
+    });
+
+    it('should require authentication', async () => {
+      const response = await request(app)
+        .get('/connections/pending');
+
+      expect(response.status).toBe(401);
+    });
+  });
 });
