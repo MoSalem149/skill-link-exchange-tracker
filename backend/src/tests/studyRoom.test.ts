@@ -95,4 +95,36 @@ describe('Study Room Routes', () => {
       expect(response.status).toBe(401);
     });
   });
+
+  describe('GET /study/rooms/:roomId', () => {
+    beforeEach(async () => {
+      // Create a test room
+      const room = await StudyRoom.create({
+        id: Date.now().toString(),
+        participants: [testUser1.email, testUser2.email],
+        progress: 0,
+        messages: [],
+        meetings: []
+      });
+      roomId = room.id;
+    });
+
+    it('should get a study room by id', async () => {
+      const response = await request(app)
+        .get(`/study/rooms/${roomId}`)
+        .set('Authorization', `Bearer ${token1}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('id', roomId);
+      expect(response.body.participants).toContain(testUser1.email);
+    });
+
+    it('should return 404 for non-existent room', async () => {
+      const response = await request(app)
+        .get('/study/rooms/nonexistent')
+        .set('Authorization', `Bearer ${token1}`);
+
+      expect(response.status).toBe(404);
+    });
+  });
 });
