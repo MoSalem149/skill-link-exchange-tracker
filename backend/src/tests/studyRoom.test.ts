@@ -127,4 +127,62 @@ describe('Study Room Routes', () => {
       expect(response.status).toBe(404);
     });
   });
+
+  describe('PUT /study/rooms/:roomId/progress', () => {
+    beforeEach(async () => {
+      // Create a test room
+      const room = await StudyRoom.create({
+        id: Date.now().toString(),
+        participants: [testUser1.email, testUser2.email],
+        progress: 0,
+        messages: [],
+        meetings: []
+      });
+      roomId = room.id;
+    });
+
+    it('should update room progress', async () => {
+      const response = await request(app)
+        .put(`/study/rooms/${roomId}/progress`)
+        .set('Authorization', `Bearer ${token1}`)
+        .send({ progress: 50 });
+
+      expect(response.status).toBe(200);
+      expect(response.body.progress).toBe(50);
+    });
+
+    it('should handle room completion and update skills exchanged', async () => {
+      const response = await request(app)
+        .put(`/study/rooms/${roomId}/progress`)
+        .set('Authorization', `Bearer ${token1}`)
+        .send({ progress: 100 });
+
+      expect(response.status).toBe(200);
+      expect(response.body.isCompleted).toBe(true);
+      expect(response.body.completedAt).toBeDefined();
+
+      // Check if users' skillsExchanged was incremented
+      const updatedUser1 = await User.findOne({ email: testUser1.email });
+      const updatedUser2 = await User.findOne({ email: testUser2.email });
+      expect(updatedUser1?.skillsExchanged).toBe(1);
+      expect(updatedUser2?.skillsExchanged).toBe(1);
+    });
+
+    it('should not complete room multiple times', async () => {
+      // Complete room first time
+      await request(app)
+        .put(`/study/rooms/${roomId}/progress`)
+        .set('Authorization', `Bearer ${token1}`)
+        .send({ progress: 100 });
+
+      // Try to complete again
+      const response = await request(app)
+        .put(`/study/rooms/${roomId}/progress`)
+        .set('Authorization', `Bearer ${token1}`)
+        .send({ progress: 100 });
+
+      const user1 = await User.findOne({ email: testUser1.email });
+      expect(user1?.skillsExchanged).toBe(1); // Should still be 1
+    });
+  });
 });
