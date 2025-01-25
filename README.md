@@ -1,12 +1,12 @@
-![Holberton logo](./readme-assets/alx-logo.webp)
+# ![Holberton logo](./readme-assets/alx-logo.webp)
 
 > Graduation Project - Readme
 
-# skill-link-tracker
+## skill-link-tracker
 
 > SkillLink is a platform for seamless skill exchange, connecting users to teach, learn, and grow through interactive tools and a user-friendly interface.
 
-# Project Drive
+## Project Drive
 
 > The project-related documentation, including the presentation and project requirements, is available on the following Google Drive:
 
@@ -95,9 +95,11 @@
   - React.js
   - TailwindCSS
   - Vite.js
+  - Socket.IO-Client
 - **Backend**:
   - Node.js
   - Express.js
+  - Socket.IO
   - MongoDB
 - **Other Tools**:
   - Google Meet API
