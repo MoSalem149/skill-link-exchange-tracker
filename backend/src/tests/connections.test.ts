@@ -156,4 +156,69 @@ describe('Connection Routes', () => {
       expect(response.status).toBe(401);
     });
   });
+
+  describe('PUT /connections/:id', () => {
+    let connectionId: string;
+
+    beforeEach(async () => {
+      // Create pending connection
+      const connection = await Connection.create({
+        senderId: testUser1.email,
+        receiverId: testUser2.email,
+        status: ConnectionStatus.PENDING
+      });
+      connectionId = connection._id.toString();
+    });
+
+    it('should accept a connection request', async () => {
+      const response = await request(app)
+        .put(`/connections/${connectionId}`)
+        .set('Authorization', `Bearer ${token2}`)
+        .send({ status: ConnectionStatus.ACCEPTED });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('status', ConnectionStatus.ACCEPTED);
+
+      // Check if connected users count was incremented
+      const updatedUser1 = await User.findOne({ email: testUser1.email });
+      const updatedUser2 = await User.findOne({ email: testUser2.email });
+      expect(updatedUser1?.connectedUsers).toBe(1);
+      expect(updatedUser2?.connectedUsers).toBe(1);
+    });
+
+    it('should reject a connection request', async () => {
+      const response = await request(app)
+        .put(`/connections/${connectionId}`)
+        .set('Authorization', `Bearer ${token2}`)
+        .send({ status: ConnectionStatus.REJECTED });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('status', ConnectionStatus.REJECTED);
+
+      // Check if connected users count remained the same
+      const updatedUser1 = await User.findOne({ email: testUser1.email });
+      const updatedUser2 = await User.findOne({ email: testUser2.email });
+      expect(updatedUser1?.connectedUsers).toBe(0);
+      expect(updatedUser2?.connectedUsers).toBe(0);
+    });
+
+    it('should not allow sender to accept their own request', async () => {
+      const response = await request(app)
+        .put(`/connections/${connectionId}`)
+        .set('Authorization', `Bearer ${token1}`)
+        .send({ status: ConnectionStatus.ACCEPTED });
+
+      expect(response.status).toBe(403);
+    });
+
+    it('should return 404 for non-existent connection', async () => {
+      const fakeId = new mongoose.Types.ObjectId();
+      const response = await request(app)
+        .put(`/connections/${fakeId}`)
+        .set('Authorization', `Bearer ${token2}`)
+        .send({ status: ConnectionStatus.ACCEPTED });
+
+      expect(response.status).toBe(404);
+    });
+  });
 });
