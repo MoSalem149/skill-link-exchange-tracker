@@ -119,7 +119,9 @@ const UserDashboard = () => {
     );
 
     return (
-      !isConnected && (
+      !isConnected &&
+      user.role === 'user' &&
+      (
         user.fullName.toLowerCase().includes(searchLower) ||
         user.skillToTeach.toLowerCase().includes(searchLower) ||
         user.skillToLearn.toLowerCase().includes(searchLower)
