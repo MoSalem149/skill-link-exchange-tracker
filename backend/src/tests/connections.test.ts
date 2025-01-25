@@ -221,4 +221,61 @@ describe('Connection Routes', () => {
       expect(response.status).toBe(404);
     });
   });
+
+  describe('GET /connections/accepted', () => {
+    beforeEach(async () => {
+      // Create accepted connection
+      await Connection.create({
+        senderId: testUser1.email,
+        receiverId: testUser2.email,
+        status: ConnectionStatus.ACCEPTED
+      });
+    });
+
+    it('should return accepted connections for user', async () => {
+      const response = await request(app)
+        .get('/connections/accepted')
+        .set('Authorization', `Bearer ${token1}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveLength(1);
+      expect(response.body[0]).toHaveProperty('status', ConnectionStatus.ACCEPTED);
+      expect(response.body[0].connectedUser).toHaveProperty('email', testUser2.email);
+    });
+
+    it('should return accepted connections for both sender and receiver', async () => {
+      const response1 = await request(app)
+        .get('/connections/accepted')
+        .set('Authorization', `Bearer ${token1}`);
+
+      const response2 = await request(app)
+        .get('/connections/accepted')
+        .set('Authorization', `Bearer ${token2}`);
+
+      expect(response1.body).toHaveLength(1);
+      expect(response2.body).toHaveLength(1);
+    });
+
+    it('should not return pending or rejected connections', async () => {
+      await Connection.create({
+        senderId: testUser1.email,
+        receiverId: 'another@test.com',
+        status: ConnectionStatus.PENDING
+      });
+
+      const response = await request(app)
+        .get('/connections/accepted')
+        .set('Authorization', `Bearer ${token1}`);
+
+      expect(response.body).toHaveLength(1);
+      expect(response.body[0]).toHaveProperty('status', ConnectionStatus.ACCEPTED);
+    });
+
+    it('should require authentication', async () => {
+      const response = await request(app)
+        .get('/connections/accepted');
+
+      expect(response.status).toBe(401);
+    });
+  });
 });
