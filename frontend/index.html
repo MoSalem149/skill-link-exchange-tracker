@@ -4,21 +4,61 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SkillLink</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="icon" type="image/x-icon" href="favicon.svg">
-    <meta name="description" content="SkillLink Platform: is an  innovative skill exchange platform designed to empower individuals to connect, 
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link rel="icon" type="image/x-icon" href="favicon.svg" />
+    <meta
+      name="description"
+      content="SkillLink Platform: is an  innovative skill exchange platform designed to empower individuals to connect, 
     learn, and grow. The platform allows users to showcase their expertise, 
-    find compatible skill partners, and engage in mutual learning experiences." />
-    <meta name="authors" content="Front-End (Mohammed Refaat, Mohamed Salem), Back-End (Ezzeldin Morgan, Mohamed Wahed)"/>
+    find compatible skill partners, and engage in mutual learning experiences."
+    />
+    <meta
+      name="authors"
+      content="Front-End (Mohammed Refaat, Mohamed Salem), Back-End (Ezzeldin Morgan, Mohamed Wahed)"
+    />
     <meta name="description" content="skillLink" />
   </head>
-
   <body>
     <div id="root"></div>
+    <!-- External Script -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
+    <!-- Vite Entry Point -->
     <script type="module" src="/src/main.tsx"></script>
+    <!-- Chatbase Integration -->
     <script>
-      (function(){if(!window.chatbase||window.chatbase("getState")!=="initialized"){window.chatbase=(...arguments)=>{if(!window.chatbase.q){window.chatbase.q=[]}window.chatbase.q.push(arguments)};window.chatbase=new Proxy(window.chatbase,{get(target,prop){if(prop==="q"){return target.q}return(...args)=>target(prop,...args)}})}const onLoad=function(){const script=document.createElement("script");script.src="https://www.chatbase.co/embed.min.js";script.id="9rZBXCPahPmrFauQyxVl_";script.domain="www.chatbase.co";document.body.appendChild(script)};if(document.readyState==="complete"){onLoad()}else{window.addEventListener("load",onLoad)}})();
+      (function () {
+        if (!window.chatbase || window.chatbase("getState") !== "initialized") {
+          window.chatbase = (...arguments) => {
+            if (!window.chatbase.q) {
+              window.chatbase.q = [];
+            }
+            window.chatbase.q.push(arguments);
+          };
+          window.chatbase = new Proxy(window.chatbase, {
+            get(target, prop) {
+              if (prop === "q") {
+                return target.q;
+              }
+              return (...args) => target(prop, ...args);
+            },
+          });
+        }
+        const onLoad = function () {
+          const script = document.createElement("script");
+          script.src = "https://www.chatbase.co/embed.min.js";
+          script.id = "9rZBXCPahPmrFauQyxVl_";
+          script.domain = "www.chatbase.co";
+          document.body.appendChild(script);
+        };
+        if (document.readyState === "complete") {
+          onLoad();
+        } else {
+          window.addEventListener("load", onLoad);
+        }
+      })();
     </script>
   </body>
 </html>
